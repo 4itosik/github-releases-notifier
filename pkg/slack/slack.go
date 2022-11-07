@@ -1,14 +1,15 @@
-package main
+package slack
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/magmel48/github-releases-notifier/pkg/models"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/4itosik/github-releases-notifier/pkg/models"
 )
 
 // SlackSender has the hook to send slack notifications.

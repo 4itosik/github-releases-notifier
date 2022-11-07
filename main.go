@@ -1,14 +1,17 @@
 package main
 
 import (
+	"os"
+	"strings"
+	"time"
+
+	models2 "github.com/4itosik/github-releases-notifier/pkg/models"
+	"github.com/4itosik/github-releases-notifier/pkg/releasechecker"
+	"github.com/4itosik/github-releases-notifier/pkg/slack"
 	"github.com/alexflint/go-arg"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/joho/godotenv"
-	models2 "github.com/magmel48/github-releases-notifier/pkg/models"
-	"os"
-	"strings"
-	"time"
 )
 
 func main() {
@@ -43,15 +46,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	checker := &Checker{
-		logger: logger,
-		tokens: map[string]string{Github: c.GithubAuthToken, Gitlab: c.GitlabAuthToken},
-	}
+	tokens := map[string]string{releasechecker.Github: c.GithubAuthToken, releasechecker.Gitlab: c.GitlabAuthToken}
+	checker := releasechecker.NewChecker(logger, tokens)
 
 	releases := make(chan models2.Repository)
 	go checker.Run(c.Interval, c.Repositories, releases)
 
-	slack := SlackSender{Hook: c.Hook, Username: c.Username, Icon: c.Icon}
+	slack := slack.SlackSender{Hook: c.Hook, Username: c.Username, Icon: c.Icon}
 
 	level.Info(logger).Log("msg", "waiting for new releases")
 	for repository := range releases {

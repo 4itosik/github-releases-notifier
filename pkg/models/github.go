@@ -22,7 +22,7 @@ type GithubQuery struct {
 					PublishedAt DateTime
 				}
 			}
-		} `graphql:"releases(last: 1)"`
+		} `graphql:"releases(orderBy: { field: CREATED_AT, direction: DESC }, first: 1)"`
 	} `graphql:"repository(owner: $owner, name: $name)"`
 }
 

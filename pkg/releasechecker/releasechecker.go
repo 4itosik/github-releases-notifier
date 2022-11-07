@@ -1,14 +1,15 @@
-package main
+package releasechecker
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/magmel48/github-releases-notifier/pkg/models"
-	"golang.org/x/oauth2"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/4itosik/github-releases-notifier/pkg/models"
+	"golang.org/x/oauth2"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -39,6 +40,13 @@ type QueryResult interface {
 	GetLatestReleasePublishingDate() time.Time
 }
 
+func NewChecker(logger log.Logger, tokens map[string]string) *Checker {
+	return &Checker{
+		logger: logger,
+		tokens: tokens,
+	}
+}
+
 // Run the queries and comparisons for the given repositories in a given interval.
 func (c *Checker) Run(interval time.Duration, repositories []string, releases chan<- models.Repository) {
 	if c.releases == nil {
@@ -49,7 +57,12 @@ func (c *Checker) Run(interval time.Duration, repositories []string, releases ch
 		for _, repoName := range repositories {
 			s := strings.Split(repoName, "/")
 			website, owner, name := s[0], s[1], s[2]
-
+			level.Debug(c.logger).Log(
+				"website", website,
+				"owner", owner,
+				"name", name,
+				"msg", "start crawler",
+			)
 			var nextRepo models.Repository
 			var err error
 
@@ -81,6 +94,17 @@ func (c *Checker) Run(interval time.Duration, repositories []string, releases ch
 				c.releases[repoName] = nextRepo
 				continue
 			}
+			level.Debug(c.logger).Log(
+				"owner", owner,
+				"name", name,
+				"msg", fmt.Sprintf("Current release published at %+v. Release name: %s", currRepo.Release.PublishedAt, currRepo.Release.Name),
+			)
+
+			level.Debug(c.logger).Log(
+				"owner", owner,
+				"name", name,
+				"msg", fmt.Sprintf("Next release published at %+v. Release name: %s", nextRepo.Release.PublishedAt, currRepo.Release.Name),
+			)
 
 			if nextRepo.Release.PublishedAt.After(currRepo.Release.PublishedAt) {
 				releases <- nextRepo
